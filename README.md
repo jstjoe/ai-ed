@@ -21,3 +21,7 @@ TODO
 - pnpm
 - vite
 - github actions CI / CD
+
+## Maintenance
+
+TODO
