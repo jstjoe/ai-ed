@@ -1,0 +1,9 @@
+node_modules/
+server/node_modules/
+client/node_modules/
+server/dist/
+client/dist/
+server/data/tasks.db
+server/data/tasks.db-shm
+server/data/tasks.db-wal
+.env
