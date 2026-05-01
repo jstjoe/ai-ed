@@ -1,4 +1,5 @@
 import { prisma } from "./client";
+import { getCurrentUser } from "../auth";
 import type { StatusKind } from "../duration";
 
 export async function listStatuses() {
@@ -6,14 +7,26 @@ export async function listStatuses() {
 }
 
 export async function listStatusesWithTasks() {
+  const user = getCurrentUser();
   return prisma.status.findMany({
     orderBy: { order: "asc" },
     include: {
       tasks: {
+        where: { ownerId: user.id },
         orderBy: { position: "asc" },
       },
     },
   });
+}
+
+export async function getStatusTaskCounts(): Promise<Record<string, number>> {
+  const user = getCurrentUser();
+  const rows = await prisma.task.groupBy({
+    by: ["statusId"],
+    where: { ownerId: user.id },
+    _count: { _all: true },
+  });
+  return Object.fromEntries(rows.map((r) => [r.statusId, r._count._all]));
 }
 
 export async function createStatus(input: {
@@ -41,37 +54,38 @@ export async function reorderStatuses(orderedIds: string[]) {
   );
 }
 
+/**
+ * Atomic reassign-then-delete. The action layer is responsible for invariant
+ * checks (e.g. keeping at least one of each StatusKind).
+ */
 export async function deleteStatus(id: string, reassignTo?: string) {
-  const taskCount = await prisma.task.count({ where: { statusId: id } });
-  if (taskCount > 0) {
-    if (!reassignTo) {
-      throw new Error(
-        `Cannot delete status with ${taskCount} task(s); choose a status to move them to.`
-      );
+  return prisma.$transaction(async (tx) => {
+    const taskCount = await tx.task.count({ where: { statusId: id } });
+    if (taskCount > 0) {
+      if (!reassignTo) {
+        throw new Error(
+          `Cannot delete status with ${taskCount} task(s); choose a status to move them to.`
+        );
+      }
+      await tx.task.updateMany({
+        where: { statusId: id },
+        data: { statusId: reassignTo },
+      });
     }
-    await prisma.task.updateMany({
-      where: { statusId: id },
-      data: { statusId: reassignTo },
-    });
-  }
+    return tx.status.delete({ where: { id } });
+  });
+}
 
-  // Ensure at least one DONE and one CANCELLED kind remains.
-  const target = await prisma.status.findUnique({ where: { id } });
-  if (!target) return;
-  if (target.kind === "DONE") {
-    const others = await prisma.status.count({
-      where: { kind: "DONE", NOT: { id } },
-    });
-    if (others === 0)
-      throw new Error("At least one Done-kind status is required.");
-  }
-  if (target.kind === "CANCELLED") {
-    const others = await prisma.status.count({
-      where: { kind: "CANCELLED", NOT: { id } },
-    });
-    if (others === 0)
-      throw new Error("At least one Cancelled-kind status is required.");
-  }
+export async function countStatusesByKind(): Promise<Record<StatusKind, number>> {
+  const rows = await prisma.status.groupBy({
+    by: ["kind"],
+    _count: { _all: true },
+  });
+  const counts: Record<string, number> = { ACTIVE: 0, DONE: 0, CANCELLED: 0 };
+  for (const r of rows) counts[r.kind] = r._count._all;
+  return counts as Record<StatusKind, number>;
+}
 
-  return prisma.status.delete({ where: { id } });
+export async function getStatus(id: string) {
+  return prisma.status.findUnique({ where: { id } });
 }

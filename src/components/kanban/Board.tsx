@@ -19,6 +19,7 @@ import { TaskCard, TaskCardPresentational } from "./TaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { moveTaskAction } from "@/lib/actions/tasks";
 import { useConfetti } from "@/components/Confetti";
+import type { Duration, Priority, StatusKind } from "@/lib/duration";
 import { Plus } from "lucide-react";
 
 type Status = {
@@ -26,17 +27,17 @@ type Status = {
   name: string;
   color: string;
   order: number;
-  kind: string;
+  kind: StatusKind;
   tasks: TaskRow[];
 };
 
-type TaskRow = {
+export type TaskRow = {
   id: string;
   title: string;
   description: string | null;
   statusId: string;
-  duration: string;
-  priority: string;
+  duration: Duration;
+  priority: Priority;
   dueDate: Date | null;
   position: number;
 };

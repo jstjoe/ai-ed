@@ -44,12 +44,15 @@ type Props =
       onClose: () => void;
     };
 
+// Due dates are saved as `new Date("YYYY-MM-DD")` (UTC midnight) on submit.
+// Read them back via UTC accessors so they round-trip cleanly regardless of
+// the user's local timezone.
 function toDateInput(d: Date | null) {
   if (!d) return "";
   const date = new Date(d);
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 

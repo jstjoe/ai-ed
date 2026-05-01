@@ -2,6 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { Plus } from "lucide-react";
+import type { StatusKind } from "@/lib/duration";
 
 export function Column({
   id,
@@ -15,7 +16,7 @@ export function Column({
   id: string;
   name: string;
   color: string;
-  kind: string;
+  kind: StatusKind;
   count: number;
   onAdd: () => void;
   children: React.ReactNode;

@@ -9,8 +9,8 @@ type TaskRow = {
   id: string;
   title: string;
   description: string | null;
-  duration: string;
-  priority: string;
+  duration: Duration;
+  priority: Priority;
   dueDate: Date | null;
 };
 
@@ -51,10 +51,10 @@ export function TaskCardPresentational({
       <div className="text-sm font-medium leading-snug">{task.title}</div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
         <span className="chip">
-          <Clock size={11} /> {DURATION_LABELS[task.duration as Duration]}
+          <Clock size={11} /> {DURATION_LABELS[task.duration]}
         </span>
         <span
-          className={`chip ${PRIORITY_COLOR[task.priority as Priority]}`}
+          className={`chip ${PRIORITY_COLOR[task.priority]}`}
           title={`Priority: ${task.priority}`}
         >
           <Flag size={11} /> {task.priority.toLowerCase()}

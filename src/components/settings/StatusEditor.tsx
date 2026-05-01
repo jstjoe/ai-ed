@@ -31,7 +31,7 @@ type Row = {
   name: string;
   color: string;
   order: number;
-  kind: string;
+  kind: StatusKind;
   taskCount: number;
 };
 
@@ -56,11 +56,17 @@ export function StatusEditor({ initial }: { initial: Row[] }) {
     if (!over || active.id === over.id) return;
     const oldIdx = rows.findIndex((r) => r.id === active.id);
     const newIdx = rows.findIndex((r) => r.id === over.id);
+    const snapshot = rows;
     const next = arrayMove(rows, oldIdx, newIdx);
     setRows(next);
     startTransition(async () => {
-      await reorderStatusesAction(next.map((r) => r.id));
-      router.refresh();
+      try {
+        await reorderStatusesAction(next.map((r) => r.id));
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Reorder failed");
+        setRows(snapshot);
+      }
     });
   }
 
@@ -70,17 +76,19 @@ export function StatusEditor({ initial }: { initial: Row[] }) {
 
   function commitUpdate(id: string, patch: Partial<Row>) {
     setError(null);
+    const snapshot = rows;
     startTransition(async () => {
       try {
         await updateStatusAction({
           id,
           name: patch.name,
           color: patch.color,
-          kind: patch.kind as StatusKind | undefined,
+          kind: patch.kind,
         });
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Update failed");
+        setRows(snapshot);
       }
     });
   }
@@ -101,7 +109,7 @@ export function StatusEditor({ initial }: { initial: Row[] }) {
             name: created.name,
             color: created.color,
             order: created.order,
-            kind: created.kind,
+            kind: created.kind as StatusKind,
             taskCount: 0,
           },
         ]);
