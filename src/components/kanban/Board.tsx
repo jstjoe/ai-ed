@@ -104,10 +104,10 @@ export function Board({ statuses: initial }: { statuses: Status[] }) {
       if (fromIdx === -1) return prev;
       const [moved] = srcCol.tasks.splice(fromIdx, 1);
       moved.statusId = toCol;
-      const insertAt =
-        fromCol === toCol && fromIdx < targetIndex
-          ? targetIndex - 1
-          : targetIndex;
+      // targetIndex was computed from destStatus.tasks which still contained
+      // the source task in the same-column case. After splicing the source
+      // out, that index points to the correct insertion slot directly.
+      const insertAt = Math.min(targetIndex, dstCol.tasks.length);
       dstCol.tasks.splice(insertAt, 0, moved);
       return next;
     });
